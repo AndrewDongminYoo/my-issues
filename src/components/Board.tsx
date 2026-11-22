@@ -19,6 +19,7 @@ import {
   type StateTab,
   type Visibility,
 } from "../board/select";
+import { issueMarkdown } from "../board/copy";
 import type { Issue, Snapshot } from "../types";
 import { Icon, type IconName } from "./Icon";
 
@@ -28,7 +29,16 @@ const TABS: [StateTab, string][] = [
   ["all", "전체"],
 ];
 
-export function Board({ snapshot }: { snapshot: Snapshot }) {
+/** Reads an issue body by URL. Absent when there is no token, as with the dev fixture. */
+type LoadBody = (url: string) => Promise<string>;
+
+export function Board({
+  snapshot,
+  loadBody,
+}: {
+  snapshot: Snapshot;
+  loadBody?: LoadBody;
+}) {
   const [filters, setFilters] = useState<Filters>({
     onlyBlocked: false,
     onlyRelated: false,
@@ -210,7 +220,12 @@ export function Board({ snapshot }: { snapshot: Snapshot }) {
           <div>
             {issues.length ? (
               issues.map((issue) => (
-                <IssueRow key={issue.u} issue={issue} refs={snapshot.refs} />
+                <IssueRow
+                  key={issue.u}
+                  issue={issue}
+                  refs={snapshot.refs}
+                  loadBody={loadBody}
+                />
               ))
             ) : (
               <p className="empty">
@@ -272,7 +287,64 @@ function Stats({ snapshot }: { snapshot: Snapshot }) {
   );
 }
 
-function IssueRow({ issue, refs }: { issue: Issue; refs: Snapshot["refs"] }) {
+type CopyState = "idle" | "busy" | "done" | "failed";
+
+const COPY_LABELS: Record<CopyState, string> = {
+  busy: "복사 중…",
+  done: "복사됨",
+  failed: "복사 실패",
+  idle: "Markdown 복사",
+};
+
+function CopyButton({
+  issue,
+  loadBody,
+}: {
+  issue: Issue;
+  loadBody?: LoadBody;
+}) {
+  const [state, setState] = useState<CopyState>("idle");
+
+  useEffect(() => {
+    if (state !== "done" && state !== "failed") return;
+    const timer = setTimeout(() => setState("idle"), 2000);
+    return () => clearTimeout(timer);
+  }, [state]);
+
+  const copy = async () => {
+    setState("busy");
+    try {
+      const body = loadBody ? await loadBody(issue.u) : "";
+      await navigator.clipboard.writeText(issueMarkdown(issue, body));
+      setState("done");
+    } catch {
+      setState("failed");
+    }
+  };
+
+  return (
+    <button
+      type="button"
+      className="copybtn"
+      disabled={state === "busy"}
+      aria-live="polite"
+      title="이슈 번호, 제목, 본문을 Markdown으로 복사합니다."
+      onClick={() => void copy()}
+    >
+      {COPY_LABELS[state]}
+    </button>
+  );
+}
+
+function IssueRow({
+  issue,
+  refs,
+  loadBody,
+}: {
+  issue: Issue;
+  refs: Snapshot["refs"];
+  loadBody?: LoadBody;
+}) {
   const links = relations(issue);
   const linkCount = links.reduce((n, [, a]) => n + a.length, 0);
   return (
@@ -297,6 +369,7 @@ function IssueRow({ issue, refs }: { issue: Issue; refs: Snapshot["refs"] }) {
           {issue.blocked > 0 && (
             <span className="tag t1">차단 요인 {issue.blocked}</span>
           )}
+          <CopyButton issue={issue} loadBody={loadBody} />
         </div>
         {linkCount > 0 && (
           <details className="rels">

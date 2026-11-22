@@ -4,6 +4,7 @@ import { Board } from "./components/Board";
 import { Layout } from "./components/Layout";
 import { TokenForm } from "./components/TokenForm";
 import { AuthError } from "./github/client";
+import { fetchIssueBody } from "./github/issue";
 import { fetchSnapshot } from "./github/snapshot";
 import {
   clearToken,
@@ -136,7 +137,14 @@ export function App() {
       )}
       {state.kind === "ready" && (
         <>
-          <Board snapshot={state.snapshot} />
+          <Board
+            snapshot={state.snapshot}
+            loadBody={
+              token && state.source === "github"
+                ? (url) => fetchIssueBody(token, url)
+                : undefined
+            }
+          />
           <footer className="foot">
             {state.source === "fixture"
               ? "로컬 fixture 데이터"

@@ -550,6 +550,22 @@ input[type="checkbox"] {
 .error {
   color: #a3342b;
 }
+.copybtn {
+  margin-left: auto;
+  border: 1px solid #e2dfe9;
+  background: #fff;
+  border-radius: 4px;
+  padding: 0 7px;
+  font-size: 11px;
+  color: #634494;
+}
+.copybtn:hover:not(:disabled) {
+  background: #f3effb;
+}
+.copybtn:disabled {
+  cursor: default;
+  opacity: 0.6;
+}
 @media (max-width: 780px) {
   .segments {
     display: none;
