@@ -1,0 +1,5 @@
+node_modules/
+dist/
+# Local snapshot fixtures and the legacy page. They hold private repository data; never commit them.
+local/
+.env
