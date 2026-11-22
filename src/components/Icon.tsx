@@ -19,7 +19,9 @@ const paths = {
       <circle cx="12" cy="12" r="2" fill="currentColor" stroke="none" />
     </>
   ),
-  repo: <path d="M5 4h14v16H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2Zm0 13h14M9 5v5l2-1 2 1V5" />,
+  repo: (
+    <path d="M5 4h14v16H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2Zm0 13h14M9 5v5l2-1 2 1V5" />
+  ),
   search: (
     <>
       <circle cx="10" cy="10" r="6.5" />

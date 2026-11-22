@@ -1,4 +1,10 @@
-import { useEffect, useMemo, useRef, useState, type CSSProperties } from "react";
+import {
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+  type CSSProperties,
+} from "react";
 import {
   closedTitle,
   countByState,
@@ -35,17 +41,30 @@ export function Board({ snapshot }: { snapshot: Snapshot }) {
   const [showExtra, setShowExtra] = useState(false);
   const searchRef = useRef<HTMLInputElement>(null);
 
-  const repos = useMemo(() => new Map(snapshot.repos.map((r) => [r.n, r])), [snapshot]);
-  const rows = useMemo(() => filterIssues(snapshot, filters), [snapshot, filters]);
+  const repos = useMemo(
+    () => new Map(snapshot.repos.map((r) => [r.n, r])),
+    [snapshot],
+  );
+  const rows = useMemo(
+    () => filterIssues(snapshot, filters),
+    [snapshot, filters],
+  );
   const groups = useMemo(() => groupByRepo(rows, tab, sort), [rows, tab, sort]);
-  const current = groups.some(([r]) => r === selected) ? selected : (groups[0]?.[0] ?? "");
+  const current = groups.some(([r]) => r === selected)
+    ? selected
+    : (groups[0]?.[0] ?? "");
   const issues = groups.find(([r]) => r === current)?.[1] ?? [];
   const repo = repos.get(current);
 
   useEffect(() => {
     const onKeyDown = (e: KeyboardEvent) => {
       const tag = (document.activeElement as HTMLElement | null)?.tagName ?? "";
-      if (e.key === "/" && !e.ctrlKey && !e.metaKey && !["INPUT", "SELECT", "TEXTAREA"].includes(tag)) {
+      if (
+        e.key === "/" &&
+        !e.ctrlKey &&
+        !e.metaKey &&
+        !["INPUT", "SELECT", "TEXTAREA"].includes(tag)
+      ) {
         e.preventDefault();
         searchRef.current?.focus();
       }
@@ -54,7 +73,8 @@ export function Board({ snapshot }: { snapshot: Snapshot }) {
     return () => document.removeEventListener("keydown", onKeyDown);
   }, []);
 
-  const update = (patch: Partial<Filters>) => setFilters((f) => ({ ...f, ...patch }));
+  const update = (patch: Partial<Filters>) =>
+    setFilters((f) => ({ ...f, ...patch }));
   const total = groups.reduce((n, [, a]) => n + a.length, 0);
 
   return (
@@ -88,7 +108,11 @@ export function Board({ snapshot }: { snapshot: Snapshot }) {
           <option value="private">비공개 저장소</option>
           <option value="all">모든 저장소</option>
         </select>
-        <select aria-label="저장소 정렬" value={sort} onChange={(e) => setSort(e.target.value as SortKey)}>
+        <select
+          aria-label="저장소 정렬"
+          value={sort}
+          onChange={(e) => setSort(e.target.value as SortKey)}
+        >
           <option value="count">이슈 많은 순</option>
           <option value="date">최근 업데이트순</option>
           <option value="name">저장소 이름순</option>
@@ -185,9 +209,13 @@ export function Board({ snapshot }: { snapshot: Snapshot }) {
           </div>
           <div>
             {issues.length ? (
-              issues.map((issue) => <IssueRow key={issue.u} issue={issue} refs={snapshot.refs} />)
+              issues.map((issue) => (
+                <IssueRow key={issue.u} issue={issue} refs={snapshot.refs} />
+              ))
             ) : (
-              <p className="empty">조건에 맞는 이슈가 없습니다. 검색어나 필터를 변경해 보세요.</p>
+              <p className="empty">
+                조건에 맞는 이슈가 없습니다. 검색어나 필터를 변경해 보세요.
+              </p>
             )}
           </div>
         </section>
@@ -203,14 +231,25 @@ function Stats({ snapshot }: { snapshot: Snapshot }) {
   const blocked = all.filter(isOpenAndBlocked).length;
   const items: [IconName, string, number, string, string, number][] = [
     ["open", "열린 이슈", open, "건", "#32976e", open / all.length],
-    ["closed", closedTitle(snapshot), closed, "건", "#8960c9", closed / all.length],
+    [
+      "closed",
+      closedTitle(snapshot),
+      closed,
+      "건",
+      "#8960c9",
+      closed / all.length,
+    ],
     ["block", "차단된 열린 이슈", blocked, "건", "#c98939", blocked / open],
     ["repo", "전체 저장소", snapshot.repos.length, "개", "#757795", 1],
   ];
   return (
     <section className="stats" aria-label="전체 통계">
       {items.map(([icon, label, n, unit, color, ratio]) => (
-        <div key={label} className="stat" style={{ "--c": color } as CSSProperties}>
+        <div
+          key={label}
+          className="stat"
+          style={{ "--c": color } as CSSProperties}
+        >
           <div className="flex">
             <Icon name={icon} />
             {label}
@@ -221,7 +260,10 @@ function Stats({ snapshot }: { snapshot: Snapshot }) {
           </strong>
           <div className="segments" aria-hidden="true">
             {Array.from({ length: 12 }, (_, i) => (
-              <i key={i} className={i < Math.round((ratio || 0) * 12) ? "on" : ""} />
+              <i
+                key={i}
+                className={i < Math.round((ratio || 0) * 12) ? "on" : ""}
+              />
             ))}
           </div>
         </div>
@@ -237,7 +279,12 @@ function IssueRow({ issue, refs }: { issue: Issue; refs: Snapshot["refs"] }) {
     <article className={`issue ${issue.t}`}>
       <Icon name={issue.t} />
       <div>
-        <a className="title" target="_blank" rel="noopener noreferrer" href={safeUrl(issue.u)}>
+        <a
+          className="title"
+          target="_blank"
+          rel="noopener noreferrer"
+          href={safeUrl(issue.u)}
+        >
           {issue.title}
         </a>
         <div className="meta">
@@ -247,15 +294,23 @@ function IssueRow({ issue, refs }: { issue: Issue; refs: Snapshot["refs"] }) {
               {label}
             </span>
           ))}
-          {issue.blocked > 0 && <span className="tag t1">차단 요인 {issue.blocked}</span>}
+          {issue.blocked > 0 && (
+            <span className="tag t1">차단 요인 {issue.blocked}</span>
+          )}
         </div>
         {linkCount > 0 && (
           <details className="rels">
             <summary>연결된 이슈 {linkCount}개</summary>
             {links.map(([kind, urls]) =>
               urls.map((u) => (
-                <a key={`${kind}:${u}`} href={safeUrl(u)} target="_blank" rel="noopener noreferrer">
-                  {kind} · {u.split("/").at(-3)} #{u.split("/").pop()} {refs[u]?.[0] ?? ""} ↗
+                <a
+                  key={`${kind}:${u}`}
+                  href={safeUrl(u)}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                >
+                  {kind} · {u.split("/").at(-3)} #{u.split("/").pop()}{" "}
+                  {refs[u]?.[0] ?? ""} ↗
                 </a>
               )),
             )}

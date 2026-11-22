@@ -32,12 +32,24 @@ export async function graphql<T>(
 ): Promise<GraphQLResult<T>> {
   const response = await fetch(ENDPOINT, {
     body: JSON.stringify({ query, variables }),
-    headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" },
+    headers: {
+      Authorization: `Bearer ${token}`,
+      "Content-Type": "application/json",
+    },
     method: "POST",
   });
-  if (response.status === 401) throw new AuthError("GitHub가 토큰을 거부했습니다. 만료되었거나 폐기된 토큰인지 확인해 주세요.");
-  if (!response.ok) throw new GitHubError(`GitHub API가 HTTP ${response.status} 오류를 반환했습니다.`);
-  const body = (await response.json()) as { data?: T | null; errors?: GraphQLError[] };
+  if (response.status === 401)
+    throw new AuthError(
+      "GitHub가 토큰을 거부했습니다. 만료되었거나 폐기된 토큰인지 확인해 주세요.",
+    );
+  if (!response.ok)
+    throw new GitHubError(
+      `GitHub API가 HTTP ${response.status} 오류를 반환했습니다.`,
+    );
+  const body = (await response.json()) as {
+    data?: T | null;
+    errors?: GraphQLError[];
+  };
   const errors = body.errors ?? [];
   if (!body.data) {
     const detail = errors.map((e) => e.message).join("; ");

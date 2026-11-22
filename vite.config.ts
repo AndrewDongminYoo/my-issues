@@ -34,7 +34,9 @@ const localFixture = (): Plugin => ({
       if (!req.url?.endsWith("/__fixture/snapshot.json")) return next();
       try {
         res.setHeader("Content-Type", "application/json");
-        res.end(readFileSync(new URL("./local/snapshot.json", import.meta.url)));
+        res.end(
+          readFileSync(new URL("./local/snapshot.json", import.meta.url)),
+        );
       } catch {
         res.statusCode = 404;
         res.end();

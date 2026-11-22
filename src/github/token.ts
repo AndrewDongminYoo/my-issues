@@ -21,7 +21,11 @@ export interface Viewer {
 
 /** Confirms that the token works and returns its owner. Throws AuthError if GitHub rejects it. */
 export async function fetchViewer(token: string): Promise<Viewer> {
-  const { data } = await graphql<{ viewer: Viewer | null }>(token, "query { viewer { login avatarUrl } }");
-  if (!data.viewer) throw new AuthError("토큰으로 GitHub 사용자를 확인할 수 없습니다.");
+  const { data } = await graphql<{ viewer: Viewer | null }>(
+    token,
+    "query { viewer { login avatarUrl } }",
+  );
+  if (!data.viewer)
+    throw new AuthError("토큰으로 GitHub 사용자를 확인할 수 없습니다.");
   return data.viewer;
 }

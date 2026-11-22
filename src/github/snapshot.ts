@@ -1,5 +1,10 @@
 import type { Issue, IssueRef, IssueState, Repo, Snapshot } from "../types";
-import { GitHubError, graphql, type GraphQLError, type GraphQLResult } from "./client";
+import {
+  GitHubError,
+  graphql,
+  type GraphQLError,
+  type GraphQLResult,
+} from "./client";
 
 // The rules follow the earlier snapshot generator (github-issue-snapshot.py):
 // - repositories: the viewer's own repositories (owner affiliation), public and private;
@@ -72,7 +77,11 @@ export interface GqlIssue {
   repository: { name: string };
   labels: Connection<{ name: string }> | null;
   parent: GqlRef | null;
-  issueDependenciesSummary: { blockedBy: number; totalBlockedBy: number; totalBlocking: number } | null;
+  issueDependenciesSummary: {
+    blockedBy: number;
+    totalBlockedBy: number;
+    totalBlocking: number;
+  } | null;
   subIssuesSummary: { total: number } | null;
   blockedBy: Connection<GqlRef> | null;
   blocking: Connection<GqlRef> | null;
@@ -92,7 +101,11 @@ interface ReposPage {
     login: string;
     repositories: {
       pageInfo: { hasNextPage: boolean; endCursor: string | null };
-      nodes: ({ name: string; visibility: string; isArchived: boolean } | null)[];
+      nodes: ({
+        name: string;
+        visibility: string;
+        isArchived: boolean;
+      } | null)[];
     };
   };
 }
@@ -103,17 +116,30 @@ const state = (s: GqlState): IssueState => (s === "OPEN" ? "open" : "closed");
  * Maps one search result to the snapshot shape. `partial` is true when GitHub reported an
  * error inside this issue, for example a related issue in a repository the token cannot read.
  */
-export function toIssue(node: GqlIssue, partial = false): { issue: Issue; refs: Record<string, IssueRef> } {
-  const refs: Record<string, IssueRef> = { [node.url]: [node.title, state(node.state)] };
+export function toIssue(
+  node: GqlIssue,
+  partial = false,
+): { issue: Issue; refs: Record<string, IssueRef> } {
+  const refs: Record<string, IssueRef> = {
+    [node.url]: [node.title, state(node.state)],
+  };
   let err = partial;
   const record = (ref: GqlRef) => {
     refs[ref.url] = [ref.title, state(ref.state)];
     return ref.url;
   };
-  const list = (connection: Connection<GqlRef> | null, expected: number | undefined) => {
+  const list = (
+    connection: Connection<GqlRef> | null,
+    expected: number | undefined,
+  ) => {
     const nodes = connection?.nodes ?? [];
     const urls = [...new Set(nodes.flatMap((n) => (n ? [record(n)] : [])))];
-    if (!connection || nodes.length !== urls.length || urls.length < connection.totalCount) err = true;
+    if (
+      !connection ||
+      nodes.length !== urls.length ||
+      urls.length < connection.totalCount
+    )
+      err = true;
     if (expected !== undefined && urls.length !== expected) err = true;
     return urls;
   };
@@ -142,49 +168,76 @@ export function toIssue(node: GqlIssue, partial = false): { issue: Issue; refs: 
 /** Index of the search node that a GraphQL error points into, if any. */
 function nodeIndex(error: GraphQLError): number | null {
   const [root, field, index] = error.path ?? [];
-  return root === "search" && field === "nodes" && typeof index === "number" ? index : null;
+  return root === "search" && field === "nodes" && typeof index === "number"
+    ? index
+    : null;
 }
 
 /** `filter` holds the state qualifiers, for example `is:closed closed:>=2026-11-08T00:00:00Z`. */
-async function searchIssues(token: string, login: string, filter: string, label: IssueState) {
+async function searchIssues(
+  token: string,
+  login: string,
+  filter: string,
+  label: IssueState,
+) {
   const q = `user:${login} is:issue ${filter} sort:updated-desc`;
   const rows: { node: GqlIssue; partial: boolean }[] = [];
   let after: string | null = null;
   let target = 0;
   do {
-    const result: GraphQLResult<SearchPage> = await graphql<SearchPage>(token, ISSUES_QUERY, {
-      after,
-      first: PAGE_SIZE,
-      q,
-    });
+    const result: GraphQLResult<SearchPage> = await graphql<SearchPage>(
+      token,
+      ISSUES_QUERY,
+      {
+        after,
+        first: PAGE_SIZE,
+        q,
+      },
+    );
     const { data, errors } = result;
     const { issueCount, nodes, pageInfo } = data.search;
     target = issueCount;
     if (target > SEARCH_CAP) {
-      throw new GitHubError(`${label} 이슈가 ${issueCount}건으로 검색 한도(1,000건)를 넘어 일부만 표시하게 됩니다.`);
+      throw new GitHubError(
+        `${label} 이슈가 ${issueCount}건으로 검색 한도(1,000건)를 넘어 일부만 표시하게 됩니다.`,
+      );
     }
     const broken = new Set(errors.map(nodeIndex).filter((i) => i !== null));
     nodes.forEach((node, i) => {
-      if (node?.url) rows.push({ node: node as GqlIssue, partial: broken.has(i) });
+      if (node?.url)
+        rows.push({ node: node as GqlIssue, partial: broken.has(i) });
     });
     after = pageInfo.hasNextPage ? pageInfo.endCursor : null;
   } while (after && rows.length < target);
   if (rows.length < target) {
-    throw new GitHubError(`${label} 이슈를 ${target}건 중 ${rows.length}건만 받았습니다. 다시 불러와 주세요.`);
+    throw new GitHubError(
+      `${label} 이슈를 ${target}건 중 ${rows.length}건만 받았습니다. 다시 불러와 주세요.`,
+    );
   }
   return rows;
 }
 
-async function fetchRepos(token: string): Promise<{ login: string; repos: Repo[] }> {
+async function fetchRepos(
+  token: string,
+): Promise<{ login: string; repos: Repo[] }> {
   const repos: Repo[] = [];
   let login = "";
   let after: string | null = null;
   do {
-    const result: GraphQLResult<ReposPage> = await graphql<ReposPage>(token, REPOS_QUERY, { after });
+    const result: GraphQLResult<ReposPage> = await graphql<ReposPage>(
+      token,
+      REPOS_QUERY,
+      { after },
+    );
     const { data } = result;
     login = data.viewer.login;
     for (const r of data.viewer.repositories.nodes) {
-      if (r) repos.push({ a: r.isArchived, n: r.name, v: r.visibility === "PUBLIC" ? "public" : "private" });
+      if (r)
+        repos.push({
+          a: r.isArchived,
+          n: r.name,
+          v: r.visibility === "PUBLIC" ? "public" : "private",
+        });
     }
     const { hasNextPage, endCursor } = data.viewer.repositories.pageInfo;
     after = hasNextPage ? endCursor : null;
@@ -193,9 +246,15 @@ async function fetchRepos(token: string): Promise<{ login: string; repos: Repo[]
 }
 
 /** Reads the viewer's repositories and issues and returns them in the snapshot shape. */
-export async function fetchSnapshot(token: string, login: string, now = new Date()): Promise<Snapshot> {
+export async function fetchSnapshot(
+  token: string,
+  login: string,
+  now = new Date(),
+): Promise<Snapshot> {
   // Search accepts ISO 8601 date-times without milliseconds.
-  const closedSince = new Date(now.getTime() - CLOSED_DAYS * 86_400_000).toISOString().replace(/\.\d{3}Z$/, "Z");
+  const closedSince = new Date(now.getTime() - CLOSED_DAYS * 86_400_000)
+    .toISOString()
+    .replace(/\.\d{3}Z$/, "Z");
   const [{ repos }, open, closed] = await Promise.all([
     fetchRepos(token),
     searchIssues(token, login, "is:open", "open"),
@@ -203,11 +262,15 @@ export async function fetchSnapshot(token: string, login: string, now = new Date
   ]);
   const rows = [...open, ...closed];
   if (new Set(rows.map((r) => r.node.url)).size !== rows.length) {
-    throw new GitHubError("불러오는 동안 이슈 상태가 바뀌었습니다. 다시 불러와 주세요.");
+    throw new GitHubError(
+      "불러오는 동안 이슈 상태가 바뀌었습니다. 다시 불러와 주세요.",
+    );
   }
   const names = new Set(repos.map((r) => r.n.toLowerCase()));
   if (rows.some((r) => !names.has(r.node.repository.name.toLowerCase()))) {
-    throw new GitHubError("검색 결과와 저장소 목록이 맞지 않습니다. 다시 불러와 주세요.");
+    throw new GitHubError(
+      "검색 결과와 저장소 목록이 맞지 않습니다. 다시 불러와 주세요.",
+    );
   }
   const snapshot: Snapshot = {
     at: now.toISOString(),

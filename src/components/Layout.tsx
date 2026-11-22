@@ -28,8 +28,14 @@ export function Layout({ viewer, subtitle, onSignOut, children }: Props) {
         </div>
         {viewer && (
           <div className="account">
-            <a href={`https://github.com/${viewer.login}`} target="_blank" rel="noopener noreferrer">
-              <span className="avatar">{viewer.login.slice(0, 1).toUpperCase()}</span>
+            <a
+              href={`https://github.com/${viewer.login}`}
+              target="_blank"
+              rel="noopener noreferrer"
+            >
+              <span className="avatar">
+                {viewer.login.slice(0, 1).toUpperCase()}
+              </span>
               {viewer.login} ↗
             </a>
             {onSignOut && (

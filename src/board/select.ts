@@ -33,7 +33,11 @@ export function filterIssues(snapshot: Snapshot, filters: Filters): Issue[] {
   const repos = new Map(snapshot.repos.map((r) => [r.n, r]));
   const query = filters.query.trim().toLowerCase();
   return snapshot.issues.filter((issue) => {
-    if (filters.visibility !== "all" && repos.get(issue.r)?.v !== filters.visibility) return false;
+    if (
+      filters.visibility !== "all" &&
+      repos.get(issue.r)?.v !== filters.visibility
+    )
+      return false;
     if (filters.onlyBlocked && !isOpenAndBlocked(issue)) return false;
     const rels = relations(issue);
     if (filters.onlyRelated && rels.length === 0) return false;
@@ -43,7 +47,9 @@ export function filterIssues(snapshot: Snapshot, filters: Filters): Issue[] {
       `#${issue.n}`,
       issue.title,
       ...issue.l,
-      ...rels.flatMap(([, urls]) => urls.map((u) => `${u} ${snapshot.refs[u]?.[0] ?? ""}`)),
+      ...rels.flatMap(([, urls]) =>
+        urls.map((u) => `${u} ${snapshot.refs[u]?.[0] ?? ""}`),
+      ),
     ];
     return haystack.join(" ").toLowerCase().includes(query);
   });
@@ -52,7 +58,11 @@ export function filterIssues(snapshot: Snapshot, filters: Filters): Issue[] {
 export type RepoGroup = [repo: string, issues: Issue[]];
 
 /** Groups the issues in the given state tab by repository and sorts the groups. */
-export function groupByRepo(issues: Issue[], tab: StateTab, sort: SortKey): RepoGroup[] {
+export function groupByRepo(
+  issues: Issue[],
+  tab: StateTab,
+  sort: SortKey,
+): RepoGroup[] {
   const groups = new Map<string, Issue[]>();
   for (const issue of issues) {
     if (tab !== "all" && issue.t !== tab) continue;
@@ -71,8 +81,13 @@ function latest(issues: Issue[]): string {
   return issues.reduce((max, i) => (i.d > max ? i.d : max), "");
 }
 
-export function countByState(issues: Issue[], repo: string, tab: StateTab): number {
-  return issues.filter((i) => i.r === repo && (tab === "all" || i.t === tab)).length;
+export function countByState(
+  issues: Issue[],
+  repo: string,
+  tab: StateTab,
+): number {
+  return issues.filter((i) => i.r === repo && (tab === "all" || i.t === tab))
+    .length;
 }
 
 /** Formats an ISO timestamp as a KST date, for example 2026.11.22. */
@@ -90,13 +105,18 @@ export function formatKstDateTime(iso: string): string {
 
 /** The title of the closed-issue count, with the start of the window when the snapshot has one. */
 export function closedTitle(snapshot: Snapshot): string {
-  return snapshot.closedSince ? `${formatKstDate(snapshot.closedSince)} 이후 닫힌 이슈` : "최근 닫힌 이슈";
+  return snapshot.closedSince
+    ? `${formatKstDate(snapshot.closedSince)} 이후 닫힌 이슈`
+    : "최근 닫힌 이슈";
 }
 
 /** One sentence that says which closed issues the board holds. */
 export function closedScope(snapshot: Snapshot): string {
-  if (!snapshot.closedSince) return "닫힌 이슈는 최근에 수정된 150건까지만 포함합니다.";
-  const days = Math.round((Date.parse(snapshot.at) - Date.parse(snapshot.closedSince)) / 86_400_000);
+  if (!snapshot.closedSince)
+    return "닫힌 이슈는 최근에 수정된 150건까지만 포함합니다.";
+  const days = Math.round(
+    (Date.parse(snapshot.at) - Date.parse(snapshot.closedSince)) / 86_400_000,
+  );
   return `닫힌 이슈는 ${formatKstDateTime(snapshot.closedSince)} 이후(최근 ${days}일)에 닫힌 것만 포함합니다.`;
 }
 
